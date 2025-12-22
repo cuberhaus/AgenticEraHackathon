@@ -4,8 +4,9 @@ import json
 # Configuration
 LOGIN_URL = "https://dm-em.informaticacloud.com"
 MARKETPLACE_URL = "https://idmc-api.dm-em.informaticacloud.com/data360/marketplace"
-USERNAME = "pcasacuberta_sandbox"
-PASSWORD = "pdeloitte79#"
+
+USERNAME = "datuaren_bulegoa"
+PASSWORD = "DATUAK.2025"
 
 def login():
     """Authenticate and get session ID and org ID"""

@@ -7,6 +7,8 @@ LOGIN_URL = "https://dm-em.informaticacloud.com"
 MARKETPLACE_URL = "https://idmc-api.dm-em.informaticacloud.com/data360/marketplace"
 USERNAME = "pcasacuberta_sandbox"
 PASSWORD = "pdeloitte79#"
+# USERNAME = "datuaren_bulegoa"
+# PASSWORD = "DATUAK.2025"
 
 # Excel file path - Update this with your file path
 EXCEL_FILE = r"C:\Users\pcasacubertagil\Downloads\dominios_subdominios.xlsx"
@@ -58,6 +60,59 @@ def generate_jwt_token(session_id):
     print(f"✓ JWT Token generated successfully")
     
     return access_token
+
+def get_existing_categories(jwt_token, org_id, session_id):
+    """Fetch all existing categories from the marketplace"""
+    
+    headers = {
+        "Authorization": f"Bearer {jwt_token}",
+        "X-INFA-ORG-ID": org_id,
+        "IDS-SESSION-ID": session_id,
+        "Accept": "application/json"
+    }
+    
+    try:
+        category_map = {}
+        offset = 0
+        limit = 100
+        total_count = None
+        
+        # Fetch all pages of categories
+        while True:
+            marketplace_url = f"{MARKETPLACE_URL}/api/v1/categories?offset={offset}&limit={limit}"
+            response = requests.get(marketplace_url, headers=headers)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            # Get total count from first response
+            if total_count is None:
+                total_count = data.get('totalCount', 0)
+                print(f"  Total categories in marketplace: {total_count}")
+            
+            # Process objects in this page
+            if 'objects' in data and isinstance(data['objects'], list):
+                for cat in data['objects']:
+                    if cat.get('name'):
+                        category_map[cat.get('name')] = cat
+                
+                # Check if we got all categories
+                offset += len(data['objects'])
+                if offset >= total_count or len(data['objects']) == 0:
+                    break
+            else:
+                break
+        
+        print(f"✓ Loaded {len(category_map)} existing categories")
+        if len(category_map) > 0:
+            print(f"  Sample categories: {list(category_map.keys())[:5]}")
+        
+        return category_map
+    except Exception as e:
+        print(f"⚠ Could not fetch existing categories: {e}")
+        import traceback
+        traceback.print_exc()
+        return {}
 
 def create_domain(jwt_token, org_id, session_id, domain_name, domain_description=""):
     """Create a domain (parent category)"""
@@ -160,15 +215,31 @@ def read_excel_and_create_hierarchy(jwt_token, org_id, session_id, excel_file):
         print("\nFirst 5 rows:")
         print(df.head(5).to_string())
         
-        # Dictionary to store created domains {domain_name: domain_id}
+        # Get existing categories first
+        print("\nFetching existing categories...")
+        existing_categories = get_existing_categories(jwt_token, org_id, session_id)
+        
+        # Dictionary to store created/existing domains {domain_name: domain_id}
         created_domains = {}
+        
+        # Dictionary to track all categories (including subdomains) to avoid duplicates
+        all_categories = {}
+        
+        # Add existing categories to the maps
+        for name, cat in existing_categories.items():
+            created_domains[name] = cat.get('id')
+            all_categories[name] = cat.get('id')
+        
+        print(f"\n✓ Pre-loaded {len(created_domains)} existing categories into cache")
         
         # Statistics
         stats = {
             "domains_created": 0,
             "subdomains_created": 0,
             "errors": 0,
-            "skipped": 0
+            "skipped": 0,
+            "domains_already_exist": 0,
+            "subdomains_already_exist": 0
         }
         
         # Process each row
@@ -203,11 +274,17 @@ def read_excel_and_create_hierarchy(jwt_token, org_id, session_id, excel_file):
                 
                 # If there's no parent domain, this IS a domain
                 if not parent_domain or parent_domain in ['nan', '', '-']:
-                    # Create as domain (top-level category)
-                    domain = create_domain(jwt_token, org_id, session_id, name, description)
-                    if domain:
-                        created_domains[name] = domain.get('id')
-                        stats["domains_created"] += 1
+                    # Check if domain already exists
+                    if name in created_domains:
+                        print(f"  ⚠ Domain already exists - ID: {created_domains[name]}")
+                        stats["domains_already_exist"] += 1
+                    else:
+                        # Create as domain (top-level category)
+                        domain = create_domain(jwt_token, org_id, session_id, name, description)
+                        if domain:
+                            created_domains[name] = domain.get('id')
+                            all_categories[name] = domain.get('id')
+                            stats["domains_created"] += 1
                 
                 else:
                     # This is a subdomain
@@ -217,19 +294,28 @@ def read_excel_and_create_hierarchy(jwt_token, org_id, session_id, excel_file):
                         parent = create_domain(jwt_token, org_id, session_id, parent_domain, "-")
                         if parent:
                             created_domains[parent_domain] = parent.get('id')
+                            all_categories[parent_domain] = parent.get('id')
                             stats["domains_created"] += 1
-                    
-                    # Now create the subdomain
-                    if parent_domain in created_domains:
-                        parent_id = created_domains[parent_domain]
-                        subdomain = create_subdomain(jwt_token, org_id, session_id, parent_id, name, description)
-                        if subdomain:
-                            stats["subdomains_created"] += 1
-                        else:
-                            stats["errors"] += 1
                     else:
-                        print(f"    ✗ Parent domain '{parent_domain}' could not be created")
-                        stats["errors"] += 1
+                        print(f"  ⚠ Parent domain already exists - ID: {created_domains[parent_domain]}")
+                    
+                    # Check if subdomain already exists
+                    if name in all_categories:
+                        print(f"  ⚠ Subdomain '{name}' already exists - ID: {all_categories[name]}")
+                        stats["subdomains_already_exist"] += 1
+                    else:
+                        # Now create the subdomain
+                        if parent_domain in created_domains:
+                            parent_id = created_domains[parent_domain]
+                            subdomain = create_subdomain(jwt_token, org_id, session_id, parent_id, name, description)
+                            if subdomain:
+                                all_categories[name] = subdomain.get('id')
+                                stats["subdomains_created"] += 1
+                            else:
+                                stats["errors"] += 1
+                        else:
+                            print(f"    ✗ Parent domain '{parent_domain}' could not be created")
+                            stats["errors"] += 1
                         
             except Exception as e:
                 print(f"  ✗ Error processing row {index + 1}: {e}")
@@ -239,11 +325,13 @@ def read_excel_and_create_hierarchy(jwt_token, org_id, session_id, excel_file):
         print("\n" + "="*60)
         print("SUMMARY")
         print("="*60)
-        print(f"Domains created:    {stats['domains_created']}")
-        print(f"Subdomains created: {stats['subdomains_created']}")
-        print(f"Errors:             {stats['errors']}")
-        print(f"Skipped:            {stats['skipped']}")
-        print(f"Total processed:    {stats['domains_created'] + stats['subdomains_created']}")
+        print(f"Domains created:        {stats['domains_created']}")
+        print(f"Domains already exist:  {stats['domains_already_exist']}")
+        print(f"Subdomains created:     {stats['subdomains_created']}")
+        print(f"Subdomains already exist: {stats['subdomains_already_exist']}")
+        print(f"Errors:                 {stats['errors']}")
+        print(f"Skipped:                {stats['skipped']}")
+        print(f"Total processed:        {stats['domains_created'] + stats['subdomains_created']}")
         
     except FileNotFoundError:
         print(f"✗ Excel file not found: {excel_file}")
