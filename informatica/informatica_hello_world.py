@@ -1,11 +1,15 @@
 import requests
 import json
+import os
+from dotenv import load_dotenv
 
-# Configuration - Replace with your environment details
-# Common regions: dm-us, dm-em, dm-ap
+# Load environment variables from .env file
+load_dotenv()
+
+# Configuration
 POD_URL = "https://dm-em.informaticacloud.com"
-USERNAME = "datuaren_bulegoa"
-PASSWORD = "DATUAK.2025"
+USERNAME = os.getenv("INFORMATICA_USERNAME")
+PASSWORD = os.getenv("INFORMATICA_PASSWORD")
 
 def informatica_hello_world():
     # 1. Authentication (Login)

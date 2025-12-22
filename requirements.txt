@@ -1,1 +1,3 @@
-agent-starter-pack
+#agent-starter-pack
+python-dotenv
+pandas

@@ -1,14 +1,17 @@
 import requests
 import json
 import pandas as pd
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configuration
 LOGIN_URL = "https://dm-em.informaticacloud.com"
 MARKETPLACE_URL = "https://idmc-api.dm-em.informaticacloud.com/data360/marketplace"
-USERNAME = "pcasacuberta_sandbox"
-PASSWORD = "pdeloitte79#"
-# USERNAME = "datuaren_bulegoa"
-# PASSWORD = "DATUAK.2025"
+USERNAME = os.getenv("INFORMATICA_USERNAME")
+PASSWORD = os.getenv("INFORMATICA_PASSWORD")
 
 # Excel file path - Update this with your file path
 EXCEL_FILE = r"C:\Users\pcasacubertagil\Downloads\dominios_subdominios.xlsx"
