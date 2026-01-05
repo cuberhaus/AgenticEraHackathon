@@ -8,8 +8,8 @@ load_dotenv()
 
 # Configuration
 POD_URL = "https://dm-em.informaticacloud.com"
-USERNAME = os.getenv("INFORMATICA_USERNAME")
-PASSWORD = os.getenv("INFORMATICA_PASSWORD")
+USERNAME = os.getenv("USERNAME")
+PASSWORD = os.getenv("PASSWORD")
 
 def informatica_hello_world():
     # 1. Authentication (Login)
