@@ -1,3 +1,5 @@
 /.venv
 .env
 informatica/.env
+# Agent skills (installed by `npx skills` — restore via `make skills-restore`)
+.agents/skills/
