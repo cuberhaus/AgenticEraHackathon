@@ -26,6 +26,14 @@ Backend container: `docker build -t aid-backend backend/ && docker run -p 8080:8
 - All prompts, field names, and log messages are in Spanish — keep that language when extending the agent.
 - Structured output flows through Pydantic models; field metadata (`nombre_campo`, `descripcion`) is read from the `ESTRUCTURA`/`DOCUMENTACION` join, not hardcoded.
 
+## Agent skills
+
+Installable skills live under `.agents/skills/` (gitignored; restore with `make skills-restore`). Pinned versions are in [skills-lock.json](skills-lock.json).
+
+- **deep-agents-memory** — consult when designing agent state, memory, or multi-step planning patterns for the ADK `Agent`.
+- **fastapi-templates** — consult when implementing endpoints in [backend/](backend/) (currently scaffolding-only).
+- **gemini-api-dev** — consult when integrating Vertex AI Gemini calls in [aid_agent/](aid_agent/) or [src/](src/) (prompts, structured output, retries).
+
 ## Pitfalls
 
 - Requires Google Cloud auth (`GOOGLE_APPLICATION_CREDENTIALS` or `gcloud auth application-default login`) plus Vertex AI + Cloud SQL access in the hackathon project.
