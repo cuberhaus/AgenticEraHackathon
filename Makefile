@@ -34,3 +34,9 @@ help: ## Show this help message
 			printf "  \033[36m%-20s\033[0m %s\n", parts[1], parts[2] \
 		} \
 	' $(MAKEFILE_LIST) || true
+
+##@ Understand (knowledge graph)
+
+.PHONY: understand-dashboard
+understand-dashboard: ## Launch the Understand Anything knowledge-graph dashboard (graph dir = repo root)
+	@node -e "require(require('os').homedir()+'/.understand-anything/repo/understand-anything-plugin/packages/dashboard/launch.cjs')"
