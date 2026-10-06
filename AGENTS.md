@@ -12,7 +12,7 @@ Agentic Era hackathon project (Google + Deloitte). A LangChain agent on Vertex A
 
 ## Build and Test
 
-Python 3.11. [requirements.txt](requirements.txt) is a stub (only `python-dotenv`, `pandas`); install the real deps explicitly:
+Python 3.11. [requirements.txt](requirements.txt) is a stub (only `python-dotenv`, `pandas`), not a lockfile; install the real deps explicitly:
 
 ```bash
 pip install langchain langchain-google-vertexai google-cloud-aiplatform google-cloud-storage google-adk psycopg2-binary fastapi uvicorn pydantic
@@ -38,7 +38,6 @@ Installable skills live under `.agents/skills/` (gitignored; restore with `make 
 
 - Requires Google Cloud auth (`GOOGLE_APPLICATION_CREDENTIALS` or `gcloud auth application-default login`) plus Vertex AI + Cloud SQL access in the hackathon project.
 - [aid_agent/main.py](aid_agent/main.py) contains hardcoded Cloud SQL host, user, and password (`qwiklabs-gcp-...`) — hackathon throwaway creds; do not reuse and do not commit new secrets.
-- `requirements.txt` pins versions that don't exist on PyPI (`pandas==3.0.2`) — treat it as a placeholder, not a lockfile.
 - Design context (architecture diagram, participants guide) lives in [docs/](docs/) as `.pptx`/`.pdf`.
 
 See [README.md](README.md) and [Notes.md](Notes.md) for hackathon context and full setup.
